@@ -1,0 +1,17 @@
+# Ignore everything by default
+*
+
+# Allow only these specific files in the root directory
+!*.lua
+!*.toc
+!README.md
+
+# Keep the .gitignore itself
+!.gitignore
+
+# Exclude common junk even if they match the patterns above
+*.log
+*.bak
+*.old
+.DS_Store
+Thumbs.db

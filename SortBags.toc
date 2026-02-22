@@ -1,0 +1,8 @@
+## Interface: 11200
+## Title: SortBags
+## Notes: Clean & Turbo Item Sorter (v21.2 BURST)
+## Author: shirsig, Mr. G, Gemini
+## Version: 21.3
+## SavedVariablesPerCharacter: SortBags_IgnoreList, SortBagsRightToLeft, SortBags_Debug
+Locales.lua
+SortBags.lua
