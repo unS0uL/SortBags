@@ -14,63 +14,10 @@ local GFR, GT, DMS =
 	end
 
 -- --- [2] NAMESPACE & CONSTANTS ---
-_G.SortBags = {
-	Queue = {},
-	IsSorting = false,
-	Stats = { start = 0, moves = 0, p1Total = 0, p2Total = 0, pickup = 0, drop = 0, cleanup = 0, retry = 0 },
-	OriginalFuncs = {},
-	L = {
-		Armor = "Armor",
-		Weapon = "Weapon",
-		Cons = "Consumable",
-		Reag = "Reagent",
-		Trade = "Trade Goods",
-		Quest = "Quest",
-		Ammo = "Projectile",
-		SoulBag = "Soul Bag",
-		HerbBag = "Herb Bag",
-		EnchBag = "Enchanting Bag",
-		AmmoBag = "Quiver",
-		Finished = "Done. Moves:%d Time:%dms (P1:%.1fms)\nFPS:%.0f Latency:%dms\nPick:%.1fms Drop:%.1fms Clean:%.1fms",
-		Waiting = "Waiting for items to unlock...",
-		NoMoves = "%s already sorted.",
-		Frozen = "Frozen (Alt+Click): %s",
-		Unfrozen = "Unfrozen: %s",
-	},
-	SlotMap = {
-		INVTYPE_HEAD = 1,
-		INVTYPE_NECK = 2,
-		INVTYPE_SHOULDER = 3,
-		INVTYPE_BODY = 4,
-		INVTYPE_CHEST = 5,
-		INVTYPE_ROBE = 5,
-		INVTYPE_WAIST = 6,
-		INVTYPE_LEGS = 7,
-		INVTYPE_FEET = 8,
-		INVTYPE_WRIST = 9,
-		INVTYPE_HAND = 10,
-		INVTYPE_HANDS = 10,
-		INVTYPE_FINGER = 11,
-		INVTYPE_TRINKET = 12,
-		INVTYPE_CLOAK = 13,
-		INVTYPE_WEAPON = 14,
-		INVTYPE_SHIELD = 15,
-		INVTYPE_2HWEAPON = 16,
-		INVTYPE_WEAPONMAINHAND = 17,
-		INVTYPE_WEAPONOFFHAND = 18,
-		INVTYPE_HOLDABLE = 19,
-		INVTYPE_RANGED = 20,
-		INVTYPE_THROWN = 21,
-		INVTYPE_RANGEDRIGHT = 22,
-		INVTYPE_RELIC = 23,
-		INVTYPE_TABARD = 24,
-		INVTYPE_SHIRT = 25,
-	},
-	Cache = { slots = {}, items = {}, reality = {}, ideal = {}, virtual = {} },
-	ItemCache = {},
-}
+_G.SortBags = _G.SortBags or {}
 local SB = _G.SortBags
 _G.SortBags_IgnoreList = _G.SortBags_IgnoreList or {}
+_G.SortBags_Debug = _G.SortBags_Debug or false
 
 local Teleports = {
 	[6948] = true, -- Hearthstone
@@ -885,23 +832,29 @@ function SB:FinalAudit()
 	local _, _, lat = GetNetStats()
 	local fps = GFR()
 
-	Log(
-		format(
-			SB.L.Finished .. " Retries:%d",
-			moves,
-			floor(DMS() - SB.Stats.start),
-			p1Avg,
-			fps,
-			lat,
-			pickAvg,
-			dropAvg,
-			cleanAvg,
-			SB.Stats.retry or 0
+	if _G.SortBags_Debug then
+		Log(
+			format(
+				SB.L.Finished .. " Retries:%d",
+				moves,
+				floor(DMS() - SB.Stats.start),
+				p1Avg,
+				fps,
+				lat,
+				pickAvg,
+				dropAvg,
+				cleanAvg,
+				SB.Stats.retry or 0
+			)
 		)
-	)
+	else
+		Log(format("Done. Moves: %d", moves))
+	end
 
 	if _G.CursorHasItem() then
-		Log("|cffff0000Audit Blocked:|r Item on cursor. Clearing.")
+		if _G.SortBags_Debug then
+			Log("|cffff0000Audit Blocked:|r Item on cursor. Clearing.")
+		end
 		local t = DMS()
 		CC()
 		SB.Stats.cleanup = SB.Stats.cleanup + (DMS() - t)
@@ -921,7 +874,9 @@ function SB:FinalAudit()
 
 		if self.AuditRetry <= 3 then
 			local delay = (SB.TargetName == "Bank") and 1.2 or 0.6
-			Log("|cffff0000Audit Failed:|r Retrying #" .. self.AuditRetry)
+			if _G.SortBags_Debug then
+				Log("|cffff0000Audit Failed:|r Retrying #" .. self.AuditRetry)
+			end
 			waitTimer = GT() + delay
 			if not self.AuditFrame then
 				self.AuditFrame = CreateFrame("Frame")
@@ -937,7 +892,9 @@ function SB:FinalAudit()
 			self:Stop()
 		end
 	else
-		Log("|cff00ff00Audit Passed.|r")
+		if _G.SortBags_Debug then
+			Log("|cff00ff00Audit Passed.|r")
+		end
 		self:Stop()
 	end
 end
@@ -950,7 +907,7 @@ function SB:Action(bags, name, isRetry)
 		self.AuditRetry = 0
 	end
 	self:InitLocale()
-	if not isRetry then
+	if not isRetry and _G.SortBags_Debug then
 		Log("Sorting " .. name .. "...")
 	end
 	self.Stats.start, self.Stats.moves, self.Stats.p1Total, self.Stats.p2Total = DMS(), 0, 0, 0
@@ -962,7 +919,9 @@ function SB:Action(bags, name, isRetry)
 		if not self.RetryFrame then
 			self.RetryFrame = CreateFrame("Frame")
 		end
-		Log("Warming cache...")
+		if _G.SortBags_Debug then
+			Log("Warming cache...")
+		end
 		waitTimer = GT() + 0.5
 		self.RetryFrame:SetScript("OnUpdate", function()
 			if waitTimer < GT() then
@@ -1077,4 +1036,6 @@ SlashCmdList["SB"] = function(msg)
 		SortBags()
 	end
 end
-Log("v21.3 MASTER Loaded.")
+if _G.SortBags_Debug then
+	Log("v21.3 MASTER Loaded.")
+end
