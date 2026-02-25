@@ -14,7 +14,62 @@ local GFR, GT, DMS =
 	end
 
 -- --- [2] NAMESPACE & CONSTANTS ---
-_G.SortBags = _G.SortBags or {}
+_G.SortBags = _G.SortBags
+	or {
+		Queue = {},
+		IsSorting = false,
+		Stats = { start = 0, moves = 0, p1Total = 0, p2Total = 0, pickup = 0, drop = 0, cleanup = 0, retry = 0 },
+		OriginalFuncs = {},
+		L = {
+			Armor = "Armor",
+			Weapon = "Weapon",
+			Cons = "Consumable",
+			Reag = "Reagent",
+			Trade = "Trade Goods",
+			Quest = "Quest",
+			Ammo = "Projectile",
+			SoulBag = "Soul Bag",
+			HerbBag = "Herb Bag",
+			EnchBag = "Enchanting Bag",
+			AmmoBag = "Quiver",
+			Finished = "Done. Moves:%d Time:%dms (P1:%.1fms)\nFPS:%.0f Latency:%dms\nPick:%.1fms Drop:%.1fms Clean:%.1fms",
+			Waiting = "Waiting for items to unlock...",
+			NoMoves = "%s already sorted.",
+			Frozen = "Frozen (Alt+Click): %s",
+			Unfrozen = "Unfrozen: %s",
+		},
+		SlotMap = {
+			INVTYPE_HEAD = 1,
+			INVTYPE_NECK = 2,
+			INVTYPE_SHOULDER = 3,
+			INVTYPE_BODY = 4,
+			INVTYPE_CHEST = 5,
+			INVTYPE_ROBE = 5,
+			INVTYPE_WAIST = 6,
+			INVTYPE_LEGS = 7,
+			INVTYPE_FEET = 8,
+			INVTYPE_WRIST = 9,
+			INVTYPE_HAND = 10,
+			INVTYPE_HANDS = 10,
+			INVTYPE_FINGER = 11,
+			INVTYPE_TRINKET = 12,
+			INVTYPE_CLOAK = 13,
+			INVTYPE_WEAPON = 14,
+			INVTYPE_SHIELD = 15,
+			INVTYPE_2HWEAPON = 16,
+			INVTYPE_WEAPONMAINHAND = 17,
+			INVTYPE_WEAPONOFFHAND = 18,
+			INVTYPE_HOLDABLE = 19,
+			INVTYPE_RANGED = 20,
+			INVTYPE_THROWN = 21,
+			INVTYPE_RANGEDRIGHT = 22,
+			INVTYPE_RELIC = 23,
+			INVTYPE_TABARD = 24,
+			INVTYPE_SHIRT = 25,
+		},
+		Cache = { slots = {}, items = {}, reality = {}, ideal = {}, virtual = {} },
+		ItemCache = {},
+	}
 local SB = _G.SortBags
 _G.SortBags_IgnoreList = _G.SortBags_IgnoreList or {}
 _G.SortBags_Debug = _G.SortBags_Debug or false
@@ -702,8 +757,8 @@ f:SetScript("OnUpdate", function()
 
 	local moved, batchStart = 0, DMS()
 	local isBank = (SB.TargetName == "Bank")
-	-- Strict Burst: Bags 4 moves, Bank 1 move per cycle for stability.
-	local limit = isBank and 1 or 4
+	-- Strict Burst: Bags 20 moves, Bank 1 move per cycle for stability.
+	local limit = isBank and 1 or 20
 	local frameBudget = 10 -- ms
 
 	while table.getn(SB.Queue) > 0 and moved < limit do
